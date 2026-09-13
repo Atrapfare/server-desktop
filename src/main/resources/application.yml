@@ -5,10 +5,33 @@ server:
 spring:
   application:
     name: dashboard
-  threads:
-    virtual:
-      enabled: true
+  http:
+    client:
+      # Bewusst unter dem 15-s-Timeout der Registry: so schlaegt die
+      # HTTP-Schicht mit einer sprechenden Meldung fehl, statt abgewuergt zu werden.
+      connect-timeout: 5s
+      read-timeout: 10s
+
+dashboard:
+  weather:
+    latitude: 48.7758
+    longitude: 9.1829
+    interval: 30m
 
 logging:
   level:
     com.atrapfare.dashboard: INFO
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+dashboard:
+  weather:
+    interval: 1m
+
+logging:
+  level:
+    com.atrapfare.dashboard: DEBUG
