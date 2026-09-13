@@ -1,0 +1,14 @@
+server:
+  address: 127.0.0.1
+  port: 8080
+
+spring:
+  application:
+    name: dashboard
+  threads:
+    virtual:
+      enabled: true
+
+logging:
+  level:
+    com.atrapfare.dashboard: INFO
