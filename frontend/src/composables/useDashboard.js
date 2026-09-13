@@ -1,4 +1,4 @@
-import { onUnmounted, reactive, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
 
 const widgets = reactive({})
 const loading = ref(true)
@@ -30,6 +30,32 @@ async function loadAll() {
   finally {
     loading.value = false
   }
+}
+
+const summary = computed(() => {
+  const values = Object.values(widgets)
+  const counts = { OK: 0, STALE: 0, ERROR: 0 }
+  let newest = null
+  for (const payload of values) {
+    if (payload.status in counts) {
+      counts[payload.status] += 1
+    }
+    if (payload.lastUpdated && (!newest || payload.lastUpdated > newest)) {
+      newest = payload.lastUpdated
+    }
+  }
+  return { total: values.length, ok: counts.OK, stale: counts.STALE, error: counts.ERROR, newest }
+})
+
+export function formatClock(isoTimestamp) {
+  if (!isoTimestamp) {
+    return '—'
+  }
+  return new Date(isoTimestamp).toLocaleTimeString('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
 }
 
 export function formatRelative(isoTimestamp, reference) {
@@ -64,5 +90,5 @@ export function useDashboard() {
     }
   })
 
-  return { widgets, loading, fetchError, now, reload: loadAll }
+  return { widgets, loading, fetchError, summary, now, reload: loadAll }
 }
