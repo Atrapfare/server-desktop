@@ -1,14 +1,27 @@
 import { computed, onUnmounted, reactive, ref } from 'vue'
 
+const RECONNECT_BASE_MS = 1_000
+const RECONNECT_MAX_MS = 30_000
+const POLL_INTERVAL_MS = 60_000
+const POLL_AFTER_FAILURES = 3
+
 const widgets = reactive({})
 const loading = ref(true)
 const fetchError = ref(null)
+const connected = ref(false)
+const polling = ref(false)
 
 // Gemeinsamer Zeittakt fuer alle relativen Zeitangaben. Ein Intervall fuer die
 // ganze Seite statt eines je Kachel.
 const now = ref(Date.now())
+
 let tickHandle = null
 let consumers = 0
+let source = null
+let reconnectHandle = null
+let reconnectDelay = RECONNECT_BASE_MS
+let failures = 0
+let pollHandle = null
 
 function applyPayload(payload) {
   widgets[payload.id] = payload
@@ -30,6 +43,69 @@ async function loadAll() {
   finally {
     loading.value = false
   }
+}
+
+function startPolling() {
+  if (pollHandle) {
+    return
+  }
+  polling.value = true
+  pollHandle = setInterval(loadAll, POLL_INTERVAL_MS)
+}
+
+function stopPolling() {
+  if (pollHandle) {
+    clearInterval(pollHandle)
+    pollHandle = null
+  }
+  polling.value = false
+}
+
+function connect() {
+  source = new EventSource('/api/stream')
+
+  source.onopen = () => {
+    connected.value = true
+    failures = 0
+    reconnectDelay = RECONNECT_BASE_MS
+    stopPolling()
+    // Waehrend der Verbindungsluecke verpasste Aktualisierungen nachholen.
+    loadAll()
+  }
+
+  source.addEventListener('widget', (event) => {
+    applyPayload(JSON.parse(event.data))
+    loading.value = false
+    fetchError.value = null
+  })
+
+  source.onerror = () => {
+    connected.value = false
+    source.close()
+    source = null
+    failures += 1
+
+    // Nach mehreren Fehlschlaegen laeuft Polling als Rueckfallebene mit, waehrend
+    // der Reconnect im Hintergrund weiter versucht wird.
+    if (failures >= POLL_AFTER_FAILURES) {
+      startPolling()
+      loadAll()
+    }
+
+    reconnectHandle = setTimeout(connect, reconnectDelay)
+    reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS)
+  }
+}
+
+function disconnect() {
+  clearTimeout(reconnectHandle)
+  reconnectHandle = null
+  stopPolling()
+  if (source) {
+    source.close()
+    source = null
+  }
+  connected.value = false
 }
 
 const summary = computed(() => {
@@ -63,7 +139,6 @@ export function formatRelative(isoTimestamp, reference) {
     return 'nie'
   }
   const seconds = Math.round((reference - new Date(isoTimestamp).getTime()) / 1000)
-  if (seconds < 0) return 'gerade eben'
   if (seconds < 60) return 'gerade eben'
   const minutes = Math.round(seconds / 60)
   if (minutes < 60) return `vor ${minutes} Min.`
@@ -77,6 +152,7 @@ export function useDashboard() {
   consumers += 1
   if (consumers === 1) {
     loadAll()
+    connect()
     tickHandle = setInterval(() => {
       now.value = Date.now()
     }, 10_000)
@@ -87,8 +163,9 @@ export function useDashboard() {
     if (consumers === 0) {
       clearInterval(tickHandle)
       tickHandle = null
+      disconnect()
     }
   })
 
-  return { widgets, loading, fetchError, summary, now, reload: loadAll }
+  return { widgets, loading, fetchError, connected, polling, summary, now, reload: loadAll }
 }

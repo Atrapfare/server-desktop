@@ -6,6 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -17,10 +18,20 @@ public class DashboardEventPublisher {
 	private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
 
 	public void register(SseEmitter emitter) {
-		emitters.add(emitter);
 		emitter.onCompletion(() -> emitters.remove(emitter));
 		emitter.onTimeout(() -> emitters.remove(emitter));
 		emitter.onError(e -> emitters.remove(emitter));
+		try {
+			// Erst dieser Write schickt die Antwort-Header raus. Ohne ihn haengt
+			// der Client bis zum ersten Heartbeat, ohne zu wissen, dass die
+			// Verbindung steht - EventSource.onopen feuert dann erst nach 30 s.
+			emitter.send(SseEmitter.event().comment("verbunden"));
+		}
+		catch (IOException e) {
+			emitter.completeWithError(e);
+			return;
+		}
+		emitters.add(emitter);
 		log.debug("SSE-Client verbunden, jetzt {} aktiv", emitters.size());
 	}
 
@@ -28,6 +39,7 @@ public class DashboardEventPublisher {
 		send(SseEmitter.event().name("widget").data(payload));
 	}
 
+	@Scheduled(fixedRate = 30_000)
 	public void heartbeat() {
 		send(SseEmitter.event().comment("ping"));
 	}

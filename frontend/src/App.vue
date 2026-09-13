@@ -3,7 +3,19 @@ import { computed } from 'vue'
 import { formatClock, useDashboard } from './composables/useDashboard.js'
 import WeatherWidget from './components/WeatherWidget.vue'
 
-const { widgets, loading, fetchError, summary, now } = useDashboard()
+const { widgets, loading, fetchError, connected, polling, summary, now } = useDashboard()
+
+const linkClass = computed(() => {
+  if (connected.value) return 'link--live'
+  if (polling.value) return 'link--poll'
+  return 'link--down'
+})
+
+const linkTitle = computed(() => {
+  if (connected.value) return 'Live-Verbindung steht'
+  if (polling.value) return 'Kein Stream — Abruf alle 60 Sekunden'
+  return 'Verbindung unterbrochen, Wiederaufbau läuft'
+})
 
 const today = computed(() => new Date(now.value).toLocaleDateString('de-DE', {
   weekday: 'long',
@@ -28,6 +40,7 @@ const today = computed(() => new Date(now.value).toLocaleDateString('de-DE', {
           <span v-if="summary.stale" class="chip chip--stale">{{ summary.stale }} veraltet</span>
           <span v-if="summary.error" class="chip chip--error">{{ summary.error }} Fehler</span>
           <span class="bar__time">Stand {{ formatClock(summary.newest) }}</span>
+          <span class="link" :class="linkClass" :title="linkTitle" aria-hidden="true"></span>
         </template>
       </div>
     </header>
@@ -107,6 +120,17 @@ const today = computed(() => new Date(now.value).toLocaleDateString('de-DE', {
   color: var(--error);
   border-color: color-mix(in srgb, var(--error) 35%, transparent);
 }
+
+.link {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.link--live { background: var(--ok); }
+.link--poll { background: var(--stale); }
+.link--down { background: var(--error); }
 
 /* auto-fit + minmax traegt den Bereich von 800 bis 2560 px ohne Breakpoints:
    schmal einspaltig, breit so viele Spalten wie bei 340 px Mindestbreite passen. */
