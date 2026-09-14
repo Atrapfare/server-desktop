@@ -153,7 +153,17 @@ nginx auf dem Heimserver:
 
 ```nginx
 server {
-    listen 172.22.22.183:8080;
+    # Port 80 statt 8080, und ohne feste Adresse. Beides mit Absicht:
+    #
+    # Auf 8080 haelt bereits Docker die Bindung 127.0.0.1:8080 - ein
+    # Wildcard-Bind auf denselben Port scheitert dort mit "Address already
+    # in use".
+    #
+    # Und eine feste Adresse in dieser Zeile zwingt nginx, beim Start auf
+    # genau diese IP zu binden. Haengt der Server am WLAN, ist sie beim
+    # Booten noch nicht da: der Dienst scheitert mit "Cannot assign
+    # requested address" und bleibt tot, bis jemand ihn von Hand startet.
+    listen 80;
     server_name _;
 
     location / {
@@ -169,6 +179,8 @@ server {
     }
 }
 ```
+
+Erreichbar ist das Dashboard damit unter `http://<Server-IP>/`.
 
 Soll ohne Proxy direkt aus dem LAN zugegriffen werden, ist die Zeile unter
 `ports:` in der `compose.yml` auf `"8080:8080"` zu ändern. Dann hängt der
