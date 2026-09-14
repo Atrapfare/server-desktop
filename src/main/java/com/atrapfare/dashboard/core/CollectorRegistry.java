@@ -32,6 +32,13 @@ public class CollectorRegistry {
 	private static final Duration COLLECT_TIMEOUT = Duration.ofSeconds(30);
 
 	/**
+	 * Wartezeit bis zum zweiten Anlauf nach einem Fehlschlag. Kurz genug, dass
+	 * die Kachel nicht lange leer bleibt, lang genug, dass eine kurze Stoerung
+	 * inzwischen vorbei sein kann.
+	 */
+	private static final Duration RETRY_DELAY = Duration.ofSeconds(60);
+
+	/**
 	 * Fehlermeldungen landen im Payload und gehen ueber SSE an jeden Client.
 	 * Ein HTTP-Fehler traegt schon mal eine komplette HTML-Seite im Text -
 	 * die gehoert nicht ins Dashboard.
@@ -89,6 +96,10 @@ public class CollectorRegistry {
 	}
 
 	public void refresh(Collector<?> collector) {
+		refresh(collector, true);
+	}
+
+	private void refresh(Collector<?> collector, boolean mayRetry) {
 		String id = collector.id();
 		Future<?> task = collectExecutor.submit(collector::collect);
 		try {
@@ -100,8 +111,41 @@ public class CollectorRegistry {
 			task.cancel(true);
 			payloads.put(id, degrade(id, e));
 			log.warn("Collector '{}' fehlgeschlagen: {}", id, describe(e));
+			if (mayRetry && shouldRetry(collector)) {
+				scheduleRetry(collector);
+			}
 		}
 		publisher.publish(payloads.get(id));
+	}
+
+	/**
+	 * Auf einer unzuverlaessigen Leitung scheitert ein Abruf schon mal, obwohl
+	 * die Gegenstelle laeuft. Bei einem langen Intervall stuende die Kachel dann
+	 * bis zum naechsten regulaeren Versuch auf veraltet - bei den Nachrichten
+	 * eine ganze Stunde. Ein kurzer zweiter Anlauf holt das auf.
+	 *
+	 * Nur bei Intervallen, die deutlich ueber der Wartezeit liegen: kommt der
+	 * regulaere Versuch ohnehin gleich, waere die Wiederholung nur zusaetzliche
+	 * Last auf einer Leitung, die gerade Muehe hat.
+	 */
+	private boolean shouldRetry(Collector<?> collector) {
+		return collector.interval().compareTo(RETRY_DELAY.multipliedBy(3)) > 0;
+	}
+
+	/**
+	 * Genau ein Versuch, keine Kette: scheitert auch er, bleibt es beim
+	 * regulaeren Zeitplan.
+	 */
+	private void scheduleRetry(Collector<?> collector) {
+		try {
+			scheduler.schedule(() -> refresh(collector, false), Instant.now().plus(RETRY_DELAY));
+			log.debug("Collector '{}' wird in {} s erneut versucht", collector.id(), RETRY_DELAY.toSeconds());
+		}
+		catch (Exception e) {
+			// Beim Herunterfahren nimmt der Scheduler nichts mehr an. Kein Grund,
+			// den laufenden Abruf daran scheitern zu lassen.
+			log.debug("Wiederholung fuer '{}' nicht mehr eingeplant: {}", collector.id(), e.toString());
+		}
 	}
 
 	/**

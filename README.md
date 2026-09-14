@@ -392,7 +392,13 @@ Statuszeile zählt die neue Quelle automatisch mit.
 | Abruf schlägt fehl, vorher lief einer durch | `STALE` | letzter Wert gedimmt, Hinweis, Zeitstempel des letzten Erfolgs |
 | Abruf schlug noch nie zu | `ERROR` | Fehlertext statt Inhalt |
 
-Ein `collect()`, das länger als 15 Sekunden braucht, wird abgebrochen und
+Scheitert ein Abruf, folgt nach einer Minute genau ein zweiter Anlauf —
+aber nur bei Intervallen über drei Minuten. Bei kurzen Intervallen kommt der
+reguläre Versuch ohnehin gleich, da wäre die Wiederholung nur zusätzliche
+Last. Ohne sie stünden die Nachrichten nach einem einzigen Fehlschlag eine
+volle Stunde leer, bis das nächste Intervall fällig wird.
+
+Ein `collect()`, das länger als 30 Sekunden braucht, wird abgebrochen und
 zählt als Fehlschlag. Ein hängender Aufruf hält die übrigen Quellen nicht auf.
 
 ---
