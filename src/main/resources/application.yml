@@ -7,10 +7,15 @@ spring:
     name: dashboard
   http:
     client:
-      # Bewusst unter dem 15-s-Timeout der Registry: so schlaegt die
+      # Bewusst unter dem 30-s-Timeout der Registry: so schlaegt die
       # HTTP-Schicht mit einer sprechenden Meldung fehl, statt abgewuergt zu werden.
-      connect-timeout: 5s
-      read-timeout: 10s
+      #
+      # Grosszuegig gewaehlt, weil der Heimserver ueber Funk haengen kann: geht
+      # ein Paket verloren, wiederholt der Resolver nach 5 s und TCP sein SYN
+      # nach 1, 3, 7 s. Ein knappes Limit trifft dann die Anwendung, waehrend
+      # dieselbe Abfrage von Hand noch durchkommt.
+      connect-timeout: 10s
+      read-timeout: 15s
 
 dashboard:
   weather:

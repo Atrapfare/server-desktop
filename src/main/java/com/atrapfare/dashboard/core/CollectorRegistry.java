@@ -23,7 +23,12 @@ public class CollectorRegistry {
 
 	private static final Logger log = LoggerFactory.getLogger(CollectorRegistry.class);
 
-	private static final Duration COLLECT_TIMEOUT = Duration.ofSeconds(15);
+	/**
+	 * Muss ueber der Summe aus Verbindungs- und Lesezeit der HTTP-Schicht
+	 * liegen, sonst wird ein Abruf hier abgebrochen, bevor er dort mit einer
+	 * sprechenden Meldung scheitert.
+	 */
+	private static final Duration COLLECT_TIMEOUT = Duration.ofSeconds(30);
 
 	/**
 	 * Fehlermeldungen landen im Payload und gehen ueber SSE an jeden Client.
