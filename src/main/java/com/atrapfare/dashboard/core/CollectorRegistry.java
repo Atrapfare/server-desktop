@@ -119,10 +119,33 @@ public class CollectorRegistry {
 			return "Zeitueberschreitung nach " + COLLECT_TIMEOUT.toSeconds() + " s";
 		}
 		String message = cause.getMessage();
-		if (message == null || message.isBlank()) {
-			return cause.getClass().getSimpleName();
+		String text = (message == null || message.isBlank())
+				? cause.getClass().getSimpleName()
+				: cause.getClass().getSimpleName() + ": " + shorten(message);
+
+		// Netzwerkfehler kommen verpackt an: die aeussere Meldung nennt nur die
+		// Adresse und haengt die des Ausloesers an - die ist oft leer ("... :
+		// null"). Dann steht in der Kachel nichts Brauchbares. Also die
+		// urspruengliche Ursache dazusagen, sie benennt das eigentliche Problem.
+		Throwable root = rootCause(cause);
+		if (root == cause) {
+			return text;
 		}
-		return cause.getClass().getSimpleName() + ": " + shorten(message);
+		String rootMessage = root.getMessage();
+		String rootText = (rootMessage == null || rootMessage.isBlank())
+				? root.getClass().getSimpleName()
+				: root.getClass().getSimpleName() + ": " + shorten(rootMessage);
+		return text.contains(rootText) ? text : text + " [" + rootText + "]";
+	}
+
+	private static Throwable rootCause(Throwable throwable) {
+		Throwable current = throwable;
+		// Zyklen sind in Ausnahmeketten selten, aber moeglich; der Zaehler
+		// verhindert, dass die Schleife daran haengen bleibt.
+		for (int depth = 0; depth < 10 && current.getCause() != null && current.getCause() != current; depth++) {
+			current = current.getCause();
+		}
+		return current;
 	}
 
 	public static String shorten(String message) {
