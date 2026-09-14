@@ -24,6 +24,7 @@
 		<!-- -Dfrontend.skip=true ueberspringt den Vue-Build fuer schnelle Backend-Iteration -->
 		<frontend.skip>false</frontend.skip>
 		<ical4j.version>4.1.1</ical4j.version>
+		<rome.version>2.1.0</rome.version>
 	</properties>
 
 	<dependencies>
@@ -46,6 +47,12 @@
 			<groupId>org.mnode.ical4j</groupId>
 			<artifactId>ical4j</artifactId>
 			<version>${ical4j.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.rometools</groupId>
+			<artifactId>rome</artifactId>
+			<version>${rome.version}</version>
 		</dependency>
 
 		<dependency>

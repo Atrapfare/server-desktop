@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { formatClock, useDashboard } from './composables/useDashboard.js'
 import WeatherWidget from './components/WeatherWidget.vue'
 import CalendarWidget from './components/CalendarWidget.vue'
+import NewsWidget from './components/NewsWidget.vue'
 
 const { widgets, loading, fetchError, connected, polling, summary, now } = useDashboard()
 
@@ -49,6 +50,7 @@ const today = computed(() => new Date(now.value).toLocaleDateString('de-DE', {
     <main class="grid">
       <WeatherWidget :payload="widgets.weather" />
       <CalendarWidget :payload="widgets.calendar" />
+      <NewsWidget :payload="widgets.news" />
     </main>
   </div>
 </template>

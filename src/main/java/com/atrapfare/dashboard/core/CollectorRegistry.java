@@ -25,6 +25,13 @@ public class CollectorRegistry {
 
 	private static final Duration COLLECT_TIMEOUT = Duration.ofSeconds(15);
 
+	/**
+	 * Fehlermeldungen landen im Payload und gehen ueber SSE an jeden Client.
+	 * Ein HTTP-Fehler traegt schon mal eine komplette HTML-Seite im Text -
+	 * die gehoert nicht ins Dashboard.
+	 */
+	private static final int MAX_ERROR_LENGTH = 200;
+
 	private final List<Collector<?>> collectors;
 
 	private final DashboardEventPublisher publisher;
@@ -112,7 +119,15 @@ public class CollectorRegistry {
 			return "Zeitueberschreitung nach " + COLLECT_TIMEOUT.toSeconds() + " s";
 		}
 		String message = cause.getMessage();
-		return (message == null || message.isBlank())
-				? cause.getClass().getSimpleName() : cause.getClass().getSimpleName() + ": " + message;
+		if (message == null || message.isBlank()) {
+			return cause.getClass().getSimpleName();
+		}
+		return cause.getClass().getSimpleName() + ": " + shorten(message);
+	}
+
+	public static String shorten(String message) {
+		String collapsed = message.replaceAll("\s+", " ").strip();
+		return (collapsed.length() <= MAX_ERROR_LENGTH)
+				? collapsed : collapsed.substring(0, MAX_ERROR_LENGTH) + " …";
 	}
 }

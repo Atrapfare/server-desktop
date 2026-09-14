@@ -23,6 +23,16 @@ dashboard:
     ical-url: ${CALENDAR_ICAL_URL:}
     interval: 15m
     look-ahead: 24h
+  news:
+    interval: 1h
+    max-items: 15
+    feeds:
+      - name: Heise
+        url: https://www.heise.de/rss/heise-atom.xml
+      - name: Golem
+        url: https://rss.golem.de/rss.php?feed=RSS2.0
+      - name: Tagesschau
+        url: https://www.tagesschau.de/index~rss2.xml
 
 logging:
   level:
@@ -38,6 +48,8 @@ dashboard:
   weather:
     interval: 1m
   calendar:
+    interval: 1m
+  news:
     interval: 1m
 
 logging:
