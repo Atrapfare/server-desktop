@@ -11,7 +11,9 @@ public record DashboardProperties(
 		@NestedConfigurationProperty Weather weather,
 		@NestedConfigurationProperty Calendar calendar,
 		@NestedConfigurationProperty News news,
-		@NestedConfigurationProperty Vps vps
+		@NestedConfigurationProperty Vps vps,
+		@NestedConfigurationProperty Host host,
+		@NestedConfigurationProperty Transit transit
 ) {
 
 	public record Weather(
@@ -40,6 +42,44 @@ public record DashboardProperties(
 
 	public record Vps(
 			String url,
+			Duration interval
+	) {
+	}
+
+	/**
+	 * Der Rechner, auf dem diese Anwendung selbst laeuft.
+	 *
+	 * @param name     Anzeigename. Leer: der Rechnername des Systems. Im Container
+	 *                 ist das die Container-ID, deshalb dort besser setzen.
+	 * @param procPath Wurzel der Kernel-Werte. Im Container zeigt {@code /proc}
+	 *                 bereits die Werte des Hosts — Last, Speicher und Laufzeit
+	 *                 sind nicht pro Container getrennt.
+	 * @param diskPath Pfad auf dem Dateisystem, dessen Belegung gemeldet wird.
+	 *                 Im Container das eigene Overlay, solange kein Verzeichnis
+	 *                 des Hosts eingehaengt ist.
+	 */
+	public record Host(
+			String name,
+			String procPath,
+			String diskPath,
+			Duration interval
+	) {
+	}
+
+	/**
+	 * Abfahrten des VVS als Verbindungsauskunft von {@code origin} nach
+	 * {@code destination}. Die Auskunft statt eines reinen Abfahrtsmonitors,
+	 * weil nur sie sagt, welche Abfahrt tatsaechlich ans Ziel fuehrt.
+	 *
+	 * @param origin      Haltestellen-ID der Abfahrt, z. B. {@code de:08111:2420}
+	 * @param destination Haltestellen-ID des Ziels
+	 * @param results     Anzahl der angezeigten Verbindungen
+	 */
+	public record Transit(
+			String baseUrl,
+			String origin,
+			String destination,
+			int results,
 			Duration interval
 	) {
 	}

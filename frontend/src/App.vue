@@ -4,7 +4,8 @@ import { formatClock, useDashboard } from './composables/useDashboard.js'
 import WeatherWidget from './components/WeatherWidget.vue'
 import CalendarWidget from './components/CalendarWidget.vue'
 import NewsWidget from './components/NewsWidget.vue'
-import VpsWidget from './components/VpsWidget.vue'
+import TransitWidget from './components/TransitWidget.vue'
+import SystemWidget from './components/SystemWidget.vue'
 
 const { widgets, loading, fetchError, connected, polling, summary, now, reload } = useDashboard()
 
@@ -114,10 +115,12 @@ function refresh() {
     </header>
 
     <main class="grid">
+      <TransitWidget :payload="widgets.transit" />
       <WeatherWidget :payload="widgets.weather" />
       <CalendarWidget :payload="widgets.calendar" />
-      <VpsWidget :payload="widgets.vps" />
       <NewsWidget :payload="widgets.news" />
+      <SystemWidget title="Heimserver" place="local" :payload="widgets.host" />
+      <SystemWidget title="VPS" place="remote" :payload="widgets.vps" />
     </main>
   </div>
 </template>
@@ -326,7 +329,9 @@ function refresh() {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
   gap: var(--gap);
-  align-items: start;
+  /* Gleiche Hoehe je Zeile: die Kacheln bilden dann durchgehende Baender wie
+     bei einer Instrumententafel, statt am unteren Rand auszufransen. */
+  align-items: stretch;
 }
 
 .grid > * {
@@ -334,9 +339,11 @@ function refresh() {
 }
 
 .grid > *:nth-child(1) { animation-delay: 0.06s; }
-.grid > *:nth-child(2) { animation-delay: 0.13s; }
-.grid > *:nth-child(3) { animation-delay: 0.2s; }
-.grid > *:nth-child(4) { animation-delay: 0.27s; }
+.grid > *:nth-child(2) { animation-delay: 0.12s; }
+.grid > *:nth-child(3) { animation-delay: 0.18s; }
+.grid > *:nth-child(4) { animation-delay: 0.24s; }
+.grid > *:nth-child(5) { animation-delay: 0.3s; }
+.grid > *:nth-child(6) { animation-delay: 0.36s; }
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(14px) scale(0.985); }

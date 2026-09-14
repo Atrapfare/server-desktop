@@ -3,20 +3,25 @@ import { computed } from 'vue'
 import WidgetCard from './WidgetCard.vue'
 
 const props = defineProps({
-  payload: { type: Object, default: null }
+  title: { type: String, required: true },
+  payload: { type: Object, default: null },
+  // "remote" ist der VPS am anderen Ende des Tunnels, "local" der Rechner,
+  // auf dem das Dashboard selbst laeuft.
+  place: { type: String, default: 'remote' }
 })
 
 const SEGMENTS = 28
 
 const data = computed(() => props.payload?.data ?? null)
 
-// Beim VPS ist der Ausfall selbst die Information - anders als bei den uebrigen
-// Kacheln reicht ein dezenter Veraltet-Hinweis hier nicht.
+// Bei einem ueberwachten Rechner ist der Ausfall selbst die Information -
+// anders als bei den uebrigen Kacheln reicht ein dezenter Veraltet-Hinweis
+// hier nicht.
 const unreachable = computed(() => ['STALE', 'ERROR'].includes(props.payload?.status))
 
 const uptime = computed(() => {
-  if (!data.value) return '—'
-  const total = data.value.uptimeSeconds
+  const total = data.value?.uptimeSeconds
+  if (total == null) return null
   const days = Math.floor(total / 86400)
   const hours = Math.floor((total % 86400) / 3600)
   const minutes = Math.floor((total % 3600) / 60)
@@ -41,29 +46,37 @@ function size(usedMb, totalMb) {
 const metrics = computed(() => {
   if (!data.value) return []
   const { load, cpuCount, memory, disk } = data.value
-  return [
-    {
+  const result = []
+
+  // Ausserhalb von Linux fuehrt der Kernel keine Lastmittel. Dann faellt die
+  // Zeile weg, statt eine Null zu zeigen, die nach Leerlauf aussieht.
+  if (load?.length) {
+    result.push({
       key: 'load',
       label: 'Last',
       ratio: load[0] / Math.max(1, cpuCount),
       value: number(load[0], 2),
       foot: `${load.map((entry) => number(entry, 2)).join('  ·  ')}   auf ${cpuCount} ${cpuCount === 1 ? 'Kern' : 'Kernen'}`
-    },
-    {
-      key: 'ram',
-      label: 'Arbeitsspeicher',
-      ratio: memory.totalMb ? memory.usedMb / memory.totalMb : 0,
-      value: size(memory.usedMb, memory.totalMb),
-      foot: `${number(Math.max(0, memory.totalMb - memory.usedMb) / (memory.totalMb >= 1024 ? 1024 : 1))} ${memory.totalMb >= 1024 ? 'GB' : 'MB'} frei`
-    },
-    {
-      key: 'disk',
-      label: 'Platte',
-      ratio: disk.totalGb ? disk.usedGb / disk.totalGb : 0,
-      value: `${number(disk.usedGb, 0)} / ${number(disk.totalGb, 0)} GB`,
-      foot: `${number(Math.max(0, disk.totalGb - disk.usedGb), 0)} GB frei`
-    }
-  ]
+    })
+  }
+
+  result.push({
+    key: 'ram',
+    label: 'Arbeitsspeicher',
+    ratio: memory.totalMb ? memory.usedMb / memory.totalMb : 0,
+    value: size(memory.usedMb, memory.totalMb),
+    foot: `${number(Math.max(0, memory.totalMb - memory.usedMb) / (memory.totalMb >= 1024 ? 1024 : 1))} ${memory.totalMb >= 1024 ? 'GB' : 'MB'} frei`
+  })
+
+  result.push({
+    key: 'disk',
+    label: 'Platte',
+    ratio: disk.totalGb ? disk.usedGb / disk.totalGb : 0,
+    value: `${number(disk.usedGb, 0)} / ${number(disk.totalGb, 0)} GB`,
+    foot: `${number(Math.max(0, disk.totalGb - disk.usedGb), 0)} GB frei`
+  })
+
+  return result
 })
 
 // Die Segmente faerben sich nach ihrer eigenen Position, nicht nach dem
@@ -84,20 +97,25 @@ function percent(ratio) {
 </script>
 
 <template>
-  <WidgetCard title="VPS" :payload="payload">
+  <WidgetCard :title="title" :payload="payload">
     <template #icon>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <svg v-if="place === 'local'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5.5 9.8V20h13V9.8" />
+        <path d="M9 20v-5h6v5" />
+      </svg>
+      <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <rect x="3" y="4" width="18" height="7" rx="2" />
         <rect x="3" y="13" width="18" height="7" rx="2" />
         <path d="M7 7.5h.01M7 16.5h.01" />
       </svg>
     </template>
 
-    <div class="vps">
+    <div class="system">
       <div class="host">
         <div class="host__id">
           <span class="host__name">{{ data?.hostname ?? 'Unbekannt' }}</span>
-          <span v-if="data" class="host__uptime num">seit {{ uptime }}</span>
+          <span v-if="uptime" class="host__uptime num">seit {{ uptime }}</span>
         </div>
         <span v-if="unreachable" class="host__down">offline</span>
       </div>
@@ -129,7 +147,7 @@ function percent(ratio) {
 </template>
 
 <style scoped>
-.vps {
+.system {
   display: flex;
   flex-direction: column;
   gap: 1.05rem;

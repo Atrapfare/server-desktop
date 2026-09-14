@@ -23,6 +23,14 @@ services:
       # erschienen dann am falschen Tag und zur falschen Uhrzeit.
       TZ: Europe/Berlin
 
+      # Im Container ist der Rechnername die Container-ID. Damit die Kachel
+      # den Server beim Namen nennt, wird er hier gesetzt.
+      HOST_NAME: heimserver
+
+      # Zeigt auf das unten eingehaengte Wurzelverzeichnis des Hosts. Ohne
+      # diese Angabe meldete die Kachel die Overlay-Schicht des Containers.
+      HOST_DISK_PATH: /hostfs
+
     # Auf dem Zielsystem stehen 8 GB zur Verfuegung; mehr als 1 GB braucht
     # die Anwendung nicht, und ein Leck bleibt so eingegrenzt.
     mem_limit: 1g
@@ -32,6 +40,18 @@ services:
     read_only: true
     tmpfs:
       - /tmp
+
+    # Nur fuer die Plattenbelegung des Hosts: der Container sieht sonst bloss
+    # sein eigenes Overlay. Nur lesbar, und gebraucht wird davon allein die
+    # Belegungsstatistik des Dateisystems.
+    #
+    # Wer das nicht einhaengen will, nimmt diesen Eintrag samt HOST_DISK_PATH
+    # heraus - dann zeigt die Kachel die Platte des Containers.
+    #
+    # Last, Speicher und Laufzeit brauchen keinen Mount: /proc ist im Kernel
+    # nicht pro Container getrennt und zeigt bereits die Werte des Hosts.
+    volumes:
+      - /:/hostfs:ro
     security_opt:
       - no-new-privileges:true
 

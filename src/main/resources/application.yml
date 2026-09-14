@@ -37,6 +37,27 @@ dashboard:
     # Zeigt auf das lokale Ende des SSH-Tunnels, nicht auf den VPS selbst.
     url: ${VPS_STATS_URL:http://localhost:9100/stats}
     interval: 30s
+  host:
+    # Leer: der Rechnername des Systems. Im Container ist das die Container-ID,
+    # deshalb dort ueber HOST_NAME einen sprechenden Namen setzen.
+    name: ${HOST_NAME:}
+    # Last, Speicher und Laufzeit sind im Kernel nicht pro Container getrennt -
+    # /proc zeigt im Container also bereits die Werte des Hosts.
+    proc-path: /proc
+    # Das Dateisystem ist getrennt. Ohne eingehaengtes Verzeichnis des Hosts
+    # meldet der Container hier seine eigene Overlay-Schicht.
+    disk-path: ${HOST_DISK_PATH:/}
+    interval: 15s
+  transit:
+    base-url: https://www3.vvs.de/vvs
+    # Haltestellen-IDs des VVS. Zu finden ueber
+    # https://www3.vvs.de/vvs/XML_STOPFINDER_REQUEST?outputFormat=rapidJSON&type_sf=any&name_sf=<Name>
+    origin: "${TRANSIT_ORIGIN:de:08111:2420}"
+    destination: "${TRANSIT_DESTINATION:de:08111:6008}"
+    results: 4
+    # Kurz genug, dass Verspaetungen ankommen; die Abfahrtszaehler laufen im
+    # Browser ohnehin sekundenweise weiter.
+    interval: 2m
 
 logging:
   level:
@@ -57,6 +78,10 @@ dashboard:
     interval: 1m
   vps:
     interval: 30s
+  host:
+    interval: 10s
+  transit:
+    interval: 1m
 
 logging:
   level:

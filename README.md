@@ -1,7 +1,7 @@
 # Dashboard
 
-Selbstgehostetes Dashboard für das lokale Netz: Wetter, Termine,
-Nachrichten und der Zustand eines externen VPS auf einer Seite. Spring Boot
+Selbstgehostetes Dashboard für das lokale Netz: Abfahrten, Wetter, Termine,
+Nachrichten und der Zustand zweier Server auf einer Seite. Spring Boot
 liefert API und Oberfläche aus einem einzigen Jar auf einem Port aus, das
 Frontend ist Vue 3. Es gibt keine Datenbank — alle Daten sind jederzeit neu
 abrufbar und liegen nur im Speicher.
@@ -17,6 +17,7 @@ nie nötig.
 - [Lokale Entwicklung](#lokale-entwicklung)
 - [Oberfläche](#oberfläche)
 - [Deployment auf den Server](#deployment-auf-den-server)
+- [Quellen](#quellen)
 - [Eine neue Datenquelle hinzufügen](#eine-neue-datenquelle-hinzufügen)
 - [Umgebungsvariablen](#umgebungsvariablen)
 - [API](#api)
@@ -102,7 +103,13 @@ aufgebaut — Rahmen, Titel, Statuslicht und relative Zeitangabe kommen aus
 | Farben, Abstände, Schriften | `frontend/src/style.css` | Alles als CSS-Variablen auf `:root`; Widgets greifen nur darauf zu und definieren keine eigenen Farben. |
 | Schriften | `@fontsource*`-Pakete | Bricolage Grotesque für Text, IBM Plex Mono für alle Zahlen. Sie werden mitgebaut statt von einem CDN geladen, damit die Seite auch ohne Weg nach draußen vollständig ist. |
 | Symbole | inline im jeweiligen Widget | SVG direkt im Template, keine Icon-Bibliothek. |
+| Rechnerwerte | `SystemWidget.vue` | Heimserver und VPS teilen sich eine Kachel; `title` und `place` unterscheiden sie. Fehlende Werte — etwa Lastmittel außerhalb von Linux — lässt sie weg, statt Nullen zu zeigen. |
 | Favicon und App-Icons | `frontend/public/` | `favicon.svg` ist die Quelle; die PNG-Größen daneben bedienen iOS und den Homescreen über `site.webmanifest`. |
+
+Lange Listen werden geblättert statt gescrollt: die Nachrichten zeigen fünf
+Meldungen je Seite, die laufende Nummer zählt über die Seiten hinweg weiter.
+Kommt im Hintergrund eine kürzere Liste an, rückt die Anzeige auf die letzte
+noch vorhandene Seite, damit die Kachel nicht leer wird.
 
 Der Zustand einer Quelle wird dreifach gezeigt, damit er auch aus einigen
 Metern Entfernung lesbar bleibt: als Lichtstreifen auf der Oberkante der
@@ -172,6 +179,55 @@ Dienst allerdings ohne jede Zwischenstufe im Netz.
 ```bash
 git pull && docker compose up -d --build
 ```
+
+---
+
+## Quellen
+
+| Kachel | Woher | Intervall | Anmerkung |
+|---|---|---|---|
+| Fahrplan | VVS über die EFA-Schnittstelle (`XML_TRIP_REQUEST2`) | 2 min | Verbindungsauskunft, kein Abfahrtsmonitor |
+| Wetter | Open-Meteo | 30 min | ohne Schlüssel |
+| Termine | iCal-Adresse des Kalenders | 15 min | |
+| Nachrichten | RSS/Atom der eingetragenen Feeds | 1 h | fällt ein Feed aus, laufen die übrigen weiter |
+| Heimserver | `/proc` des eigenen Rechners | 15 s | |
+| VPS | Agent am lokalen Ende des SSH-Tunnels | 30 s | |
+
+### Fahrplan
+
+Abgefragt wird die Verbindungsauskunft und nicht der Abfahrtsmonitor. An
+einer Haltestelle fährt dieselbe Linie in beide Richtungen — welche Abfahrt
+tatsächlich ans Ziel führt, weiß erst die Auskunft. Sie trägt außerdem einen
+Umstieg oder einen Fußweg mit, falls der Fahrplan das eines Tages verlangt;
+am Abend und nachts ist das auf der voreingestellten Strecke bereits der Fall.
+
+Die Haltestellen stehen als IDs in der Konfiguration. Die eigene findet man
+über den Stopfinder derselben Schnittstelle:
+
+```bash
+curl "https://www3.vvs.de/vvs/XML_STOPFINDER_REQUEST?outputFormat=rapidJSON&type_sf=any&name_sf=Laihle"
+```
+
+Die Kachel zeigt die nächste Verbindung groß mit Countdown und darunter die
+folgenden. Beginnt eine Verbindung mit einem Fußweg, ist die genannte Zeit
+der Aufbruch von zu Hause, nicht die Abfahrt des Fahrzeugs — die Kachel sagt
+das dann dazu. Der Countdown läuft im Browser sekundenweise weiter, unabhängig
+vom Abrufintervall.
+
+### Heimserver
+
+Gelesen wird direkt aus `/proc`, genau wie es der VPS-Agent auf der Gegenseite
+tut. Im Container ist das der richtige Weg: Last, Speicher und Laufzeit sind
+im Kernel nicht pro Container getrennt, `/proc` zeigt dort also bereits die
+Werte des Hosts. Nur das Dateisystem ist getrennt — deshalb hängt die
+`compose.yml` die Wurzel des Hosts unter `/hostfs` nur lesbar ein und
+`HOST_DISK_PATH` zeigt darauf. Wer das nicht möchte, entfernt beides; dann
+meldet die Kachel die Platte des Containers.
+
+Fehlt `/proc` ganz — etwa bei der Entwicklung unter Windows — treten die Werte
+der JVM an seine Stelle. Laufzeit und Lastmittel lassen sich so nicht
+bestimmen und bleiben leer, statt geraten zu werden; die Kachel lässt die
+Zeile dann weg.
 
 ---
 
@@ -308,6 +364,10 @@ ist über `.gitignore` ausgeschlossen, `.env.example` listet alles auf.
 |---|---|---|---|
 | `CALENDAR_ICAL_URL` | ja | — | Geheime iCal-Adresse des Kalenders. Fehlt sie, meldet nur die Termin-Kachel einen Fehler; die Anwendung startet trotzdem. |
 | `VPS_STATS_URL` | nein | `http://localhost:9100/stats` | Lokales Ende des SSH-Tunnels. Im Container `http://host.docker.internal:9100/stats`. |
+| `HOST_NAME` | nein | Rechnername | Anzeigename in der Heimserver-Kachel. Im Container wäre der Rechnername sonst die Container-ID. |
+| `HOST_DISK_PATH` | nein | `/` | Dateisystem, dessen Belegung gemeldet wird. Im Container `/hostfs`, passend zum Bind-Mount der `compose.yml`. |
+| `TRANSIT_ORIGIN` | nein | `de:08111:2420` | VVS-Haltestelle der Abfahrt (Stuttgart, Laihle). |
+| `TRANSIT_DESTINATION` | nein | `de:08111:6008` | VVS-Haltestelle des Ziels (Stuttgart, Universität). |
 | `TZ` | nein | `UTC` | Zeitzone. Die `compose.yml` setzt `Europe/Berlin` — ohne das erschienen Termine am falschen Tag. |
 | `SERVER_ADDRESS` | nein | `127.0.0.1` | Bind-Adresse. Das `Dockerfile` setzt `0.0.0.0`, weil die Portfreigabe den Dienst sonst nicht erreicht; nach außen begrenzt ihn das Host-Binding der `compose.yml`. |
 | `SPRING_PROFILES_ACTIVE` | nein | — | `dev` verkürzt alle Intervalle auf eine Minute. |
