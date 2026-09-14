@@ -17,6 +17,12 @@ dashboard:
     latitude: 48.7758
     longitude: 9.1829
     interval: 30m
+  calendar:
+    # Ohne gesetzte Variable meldet nur dieses Widget einen Fehler, statt den
+    # Start der ganzen Anwendung zu verhindern.
+    ical-url: ${CALENDAR_ICAL_URL:}
+    interval: 15m
+    look-ahead: 24h
 
 logging:
   level:
@@ -30,6 +36,8 @@ spring:
 
 dashboard:
   weather:
+    interval: 1m
+  calendar:
     interval: 1m
 
 logging:

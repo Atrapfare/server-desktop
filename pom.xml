@@ -23,6 +23,7 @@
 		<npm.version>11.10.0</npm.version>
 		<!-- -Dfrontend.skip=true ueberspringt den Vue-Build fuer schnelle Backend-Iteration -->
 		<frontend.skip>false</frontend.skip>
+		<ical4j.version>4.1.1</ical4j.version>
 	</properties>
 
 	<dependencies>
@@ -39,6 +40,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-restclient</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mnode.ical4j</groupId>
+			<artifactId>ical4j</artifactId>
+			<version>${ical4j.version}</version>
 		</dependency>
 
 		<dependency>
