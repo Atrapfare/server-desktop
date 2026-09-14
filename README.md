@@ -15,6 +15,7 @@ nie nötig.
 
 - [Voraussetzungen](#voraussetzungen)
 - [Lokale Entwicklung](#lokale-entwicklung)
+- [Oberfläche](#oberfläche)
 - [Deployment auf den Server](#deployment-auf-den-server)
 - [Eine neue Datenquelle hinzufügen](#eine-neue-datenquelle-hinzufügen)
 - [Umgebungsvariablen](#umgebungsvariablen)
@@ -86,6 +87,30 @@ Verzeichnis gehört deshalb nicht ins Repo.
 Abgedeckt sind das Zustandsverhalten der `CollectorRegistry` — vor allem der
 Übergang nach `STALE` — und die RRULE-Expansion des Kalenders gegen einen
 Beispielkalender. Für HTTP-Aufrufe nach außen gibt es bewusst keine Tests.
+
+---
+
+## Oberfläche
+
+Dunkles Kachelraster ohne Breakpoints: `auto-fit` mit einer Mindestbreite von
+340 px trägt Handy bis Wandmonitor. Die Kacheln sind untereinander gleich
+aufgebaut — Rahmen, Titel, Statuslicht und relative Zeitangabe kommen aus
+`WidgetCard`, die Darstellung der Werte aus dem jeweiligen Widget.
+
+| Baustein | Ort | Zweck |
+|---|---|---|
+| Farben, Abstände, Schriften | `frontend/src/style.css` | Alles als CSS-Variablen auf `:root`; Widgets greifen nur darauf zu und definieren keine eigenen Farben. |
+| Schriften | `@fontsource*`-Pakete | Bricolage Grotesque für Text, IBM Plex Mono für alle Zahlen. Sie werden mitgebaut statt von einem CDN geladen, damit die Seite auch ohne Weg nach draußen vollständig ist. |
+| Symbole | inline im jeweiligen Widget | SVG direkt im Template, keine Icon-Bibliothek. |
+| Favicon und App-Icons | `frontend/public/` | `favicon.svg` ist die Quelle; die PNG-Größen daneben bedienen iOS und den Homescreen über `site.webmanifest`. |
+
+Der Zustand einer Quelle wird dreifach gezeigt, damit er auch aus einigen
+Metern Entfernung lesbar bleibt: als Lichtstreifen auf der Oberkante der
+Kachel, als Punkt neben der Zeitangabe und gezählt in der Kopfzeile.
+
+Bewegung bleibt sparsam und respektiert `prefers-reduced-motion`: einmaliges
+Einblenden beim Laden, ein ruhiger Puls am Live-Punkt, sonst nur Übergänge auf
+Werten, die sich tatsächlich ändern.
 
 ---
 
@@ -229,7 +254,8 @@ Im Profil `dev` darunter ein kürzeres Intervall eintragen.
 `frontend/src/components/StromWidget.vue` nach dem Muster der übrigen
 Widgets: `WidgetCard` als Rahmen, die eigentliche Darstellung als Inhalt.
 `WidgetCard` kümmert sich um Titel, Statuspunkt, relative Zeitangabe sowie um
-die Darstellung von `STALE` und `ERROR`.
+die Darstellung von `STALE` und `ERROR`. Über den Slot `icon` nimmt sie ein
+kleines SVG für die Kopfzeile entgegen.
 
 ```vue
 <script setup>
@@ -240,6 +266,12 @@ const props = defineProps({ payload: { type: Object, default: null } })
 
 <template>
   <WidgetCard title="Strompreis" :payload="payload">
+    <template #icon>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M13 3 5 14h6l-1 7 8-11h-6z" />
+      </svg>
+    </template>
+
     <div v-if="payload?.data">{{ payload.data.centPerKwh }} ct/kWh</div>
   </WidgetCard>
 </template>

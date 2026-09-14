@@ -1,18 +1,47 @@
+/* Bricolage Grotesque traegt die Flaeche, IBM Plex Mono alle Zahlen und Marken.
+   Beide werden mitgebaut statt von einem CDN geladen - das Dashboard laeuft
+   auch dann vollstaendig, wenn der Server keinen Weg nach draussen hat. */
+@import '@fontsource-variable/bricolage-grotesque/wght.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+@import '@fontsource/ibm-plex-mono/latin-600.css';
+
 :root {
   color-scheme: dark;
-  --bg: #0f1216;
-  --surface: #171b21;
-  --surface-raised: #1e242c;
-  --border: #2a323d;
-  --text: #e6eaf0;
-  --text-muted: #96a1b0;
-  --text-faint: #6b7685;
-  --accent: #5aa9e6;
-  --ok: #4ade80;
-  --stale: #fbbf24;
-  --error: #f87171;
-  --radius: 10px;
-  --gap: 1rem;
+
+  /* Flaechen: von der Seite (tief) bis zur angehobenen Kachelflaeche. */
+  --bg: #070a10;
+  --bg-deep: #04060a;
+  --surface: #0d1219;
+  --surface-raised: #141b25;
+  --surface-sunken: #090d13;
+
+  /* Linien liegen als Weiss-Alpha ueber der Flaeche, damit sie auf jeder
+     Schicht gleich stark wirken statt mit dem Untergrund zu kippen. */
+  --line: rgba(150, 176, 210, 0.12);
+  --line-strong: rgba(150, 176, 210, 0.22);
+  --line-faint: rgba(150, 176, 210, 0.07);
+
+  --text: #e9eef6;
+  --text-muted: #94a3b8;
+  --text-faint: #63707f;
+
+  --accent: #4f9dff;
+  --accent-soft: #8ec2ff;
+  --cyan: #3fded0;
+  --ok: #3fd68a;
+  --stale: #f5b544;
+  --error: #ff6159;
+
+  --font-sans: 'Bricolage Grotesque Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --radius: 16px;
+  --radius-sm: 9px;
+  --gap: clamp(0.85rem, 1.1vw, 1.35rem);
+
+  --shadow: 0 24px 48px -32px rgba(0, 0, 0, 0.95);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -29,12 +58,106 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
+  font-optical-sizing: auto;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Zwei sehr flache Lichtkegel geben der Seite Tiefe, ohne dass irgendwo ein
+   Farbverlauf als solcher auffaellt. Fest positioniert: das Licht liegt auf
+   dem Fenster, nicht auf dem Inhalt, und wandert beim Scrollen nicht mit. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(90ch 60ch at 8% -12%, rgba(79, 157, 255, 0.13), transparent 62%),
+    radial-gradient(70ch 50ch at 102% 108%, rgba(245, 181, 68, 0.07), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+}
+
+/* Feines Korn bricht die glatten Verlaeufe auf - ohne das Korn sieht man auf
+   grossen Monitoren die Abstufungen der Lichtkegel als Ringe. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 a {
   color: var(--accent);
+}
+
+/* Ein einziger, ueberall gleicher Fokusring - Tastaturbedienung bleibt auf
+   dunklem Grund sonst schnell unsichtbar. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-raised);
+  border-radius: 999px;
+  border: 2px solid var(--bg-deep);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+
+/* Gemeinsame Bausteine der Kacheln: Kleinschrift-Label und Ziffernsatz.
+   Beides taucht in jedem Widget auf und gehoert deshalb nicht in eines. */
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

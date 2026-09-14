@@ -11,9 +11,10 @@ const fetchError = ref(null)
 const connected = ref(false)
 const polling = ref(false)
 
-// Gemeinsamer Zeittakt fuer alle relativen Zeitangaben. Ein Intervall fuer die
-// ganze Seite statt eines je Kachel.
+// Gemeinsamer Zeittakt fuer Uhr, relative Zeitangaben und Tagesfortschritt.
+// Ein Intervall fuer die ganze Seite statt eines je Kachel.
 const now = ref(Date.now())
+const TICK_MS = 1_000
 
 let tickHandle = null
 let consumers = 0
@@ -155,7 +156,7 @@ export function useDashboard() {
     connect()
     tickHandle = setInterval(() => {
       now.value = Date.now()
-    }, 10_000)
+    }, TICK_MS)
   }
 
   onUnmounted(() => {
