@@ -1,6 +1,6 @@
 # Dashboard
 
-Selbstgehostetes Dashboard für das lokale Netz: Wetter, heutige Termine,
+Selbstgehostetes Dashboard für das lokale Netz: Wetter, Termine,
 Nachrichten und der Zustand eines externen VPS auf einer Seite. Spring Boot
 liefert API und Oberfläche aus einem einzigen Jar auf einem Port aus, das
 Frontend ist Vue 3. Es gibt keine Datenbank — alle Daten sind jederzeit neu
