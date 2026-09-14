@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -153,8 +154,19 @@ public class CollectorRegistry {
 		return current;
 	}
 
+	/**
+	 * Adressen in Fehlermeldungen werden auf den Rechnernamen gekuerzt.
+	 *
+	 * Der Pfad einer Adresse ist manchmal das Geheimnis selbst - die private
+	 * iCal-Adresse eines Kalenders etwa gibt jedem Lesezugriff, der sie kennt.
+	 * Fehlermeldungen stehen aber offen auf dem Dashboard und gehen ueber SSE
+	 * an jeden verbundenen Client. Der Rechnername reicht zur Eingrenzung.
+	 */
+	private static final Pattern URL = Pattern.compile("(https?://[^/\s\"]+)[^\s\"]*");
+
 	public static String shorten(String message) {
-		String collapsed = message.replaceAll("\s+", " ").strip();
+		String collapsed = URL.matcher(message.replaceAll("\s+", " ").strip())
+				.replaceAll("$1/…");
 		return (collapsed.length() <= MAX_ERROR_LENGTH)
 				? collapsed : collapsed.substring(0, MAX_ERROR_LENGTH) + " …";
 	}

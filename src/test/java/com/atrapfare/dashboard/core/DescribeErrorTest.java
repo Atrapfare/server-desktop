@@ -75,4 +75,32 @@ class DescribeErrorTest {
 
 		assertThat(error).containsOnlyOnce("Connection refused");
 	}
+
+	@Test
+	void geheimeAdresseLandetNichtInDerMeldung() {
+		String secret = "https://calendar.google.com/calendar/ical/wer%40example.de/private-b57ad8aa96341ef/basic.ics";
+		String error = describe(new ResourceAccessException(
+				"I/O error on GET request for \"" + secret + "\": null",
+				// So kommt es real an: der Grund steckt unter einer IOException.
+				new IOException(new java.nio.channels.UnresolvedAddressException())));
+
+		assertThat(error)
+				.doesNotContain("private-b57ad8aa96341ef")
+				.doesNotContain("basic.ics")
+				.doesNotContain("wer%40example.de")
+				// Der Rechnername bleibt stehen, sonst waere die Meldung wertlos.
+				.contains("calendar.google.com")
+				.contains("UnresolvedAddressException");
+	}
+
+	@Test
+	void mehrereAdressenWerdenAlleGekuerzt() {
+		String error = describe(new IllegalStateException(
+				"Kein Feed erreichbar: https://a.example.de/geheim/feed.xml, https://b.example.de/auch/geheim"));
+
+		assertThat(error)
+				.doesNotContain("geheim")
+				.contains("a.example.de")
+				.contains("b.example.de");
+	}
 }
