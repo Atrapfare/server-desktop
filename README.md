@@ -364,12 +364,19 @@ Auf dem **VPS** einen Nutzer anlegen, der nichts darf außer weiterleiten. In
 Einschränkungen eintragen:
 
 ```
-restrict,permitopen="127.0.0.1:9100",command="/usr/sbin/nologin" ssh-ed25519 AAAA... dashboard-tunnel
+restrict,port-forwarding,permitopen="127.0.0.1:9100",command="/usr/sbin/nologin" ssh-ed25519 AAAA... dashboard-tunnel
 ```
 
-`restrict` schaltet alles ab, `permitopen` erlaubt exakt die eine
-Weiterleitung. Selbst wenn der Schlüssel abhandenkommt, öffnet er nichts
-weiter als diesen einen Port.
+`restrict` schaltet alles ab — **auch das Port-Forwarding selbst**.
+`port-forwarding` schaltet es gezielt wieder ein, `permitopen` begrenzt es
+auf genau dieses eine Ziel, und `command` verhindert, dass über den Schlüssel
+irgendein Befehl ausgeführt werden kann. `permitopen` allein genügt nach
+`restrict` **nicht**: es schränkt nur ein, was erlaubt ist, und hebt die
+Sperre nicht auf — die Verbindung stünde, aber die Weiterleitung schlüge mit
+`administratively prohibited` fehl.
+
+Selbst wenn der Schlüssel abhandenkommt, öffnet er damit nichts weiter als
+diesen einen Port.
 
 Einmal von Hand verbinden, damit der Hostschlüssel in `known_hosts` landet:
 
