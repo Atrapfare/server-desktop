@@ -9,7 +9,12 @@ const props = defineProps({
 
 const { now } = useDashboard()
 
-const events = computed(() => props.payload?.data ?? [])
+const events = computed(() => props.payload?.data?.events ?? [])
+const failed = computed(() => props.payload?.data?.failedSources ?? [])
+
+// Die Herkunft steht nur an den Terminen, wenn mehrere Kalender eingetragen
+// sind - bei einem einzigen waere sie an jeder Zeile dieselbe Auskunft.
+const showSource = computed(() => (props.payload?.data?.sourceCount ?? 1) > 1)
 
 const GROUP_LABEL = {
   HEUTE: 'Heute',
@@ -74,6 +79,11 @@ function progress(event) {
       </svg>
     </template>
 
+    <p v-if="failed.length" class="failed">
+      <span class="failed__mark" aria-hidden="true">!</span>
+      Ohne {{ failed.map((source) => source.name).join(', ') }} — Kalender nicht erreichbar
+    </p>
+
     <div v-if="events.length" class="agenda">
       <section v-for="group in groups" :key="group.key" class="group">
         <p class="group__label label">{{ group.label }}</p>
@@ -110,6 +120,7 @@ function progress(event) {
               </span>
 
               <span class="event__sub">
+                <span v-if="showSource && event.source" class="event__source">{{ event.source }}</span>
                 <span v-if="group.key === 'SPAETER'" class="event__date num">{{ day(event.start) }}</span>
                 <span v-if="event.location" class="event__location">{{ event.location }}</span>
               </span>
@@ -255,6 +266,42 @@ function progress(event) {
 
 .event__date {
   color: var(--text-muted);
+}
+
+/* Herkunft als ruhige Marke: sie soll zuzuordnen sein, ohne mit dem Titel um
+   Aufmerksamkeit zu ringen. */
+.event__source {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-soft);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 4px;
+  padding: 0.02rem 0.3rem;
+  white-space: nowrap;
+}
+
+.failed {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.7rem;
+  font-size: 0.75rem;
+  color: var(--stale);
+}
+
+.failed__mark {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--stale);
 }
 
 .event__location {

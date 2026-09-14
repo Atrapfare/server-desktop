@@ -26,6 +26,9 @@ dashboard:
     # Ohne gesetzte Variable meldet nur dieses Widget einen Fehler, statt den
     # Start der ganzen Anwendung zu verhindern.
     ical-url: ${CALENDAR_ICAL_URL:}
+    # Weitere Kalender kommen als nummerierte Variablen aus der .env, siehe
+    # .env.example. Sie treten neben ical-url, ersetzen sie also nicht.
+    sources: []
     interval: 15m
     look-ahead: 24h
   news:

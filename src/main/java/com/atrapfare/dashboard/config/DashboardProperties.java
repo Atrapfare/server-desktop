@@ -23,11 +23,21 @@ public record DashboardProperties(
 	) {
 	}
 
+	/**
+	 * @param icalUrl Einzelne Quelle. Bleibt fuer bestehende Installationen
+	 *                erhalten und zaehlt als weitere Quelle neben {@code sources}.
+	 * @param sources Beliebig viele benannte Kalender. Der Name steht an den
+	 *                Terminen, sobald mehr als eine Quelle Termine liefert.
+	 */
 	public record Calendar(
 			String icalUrl,
+			List<Source> sources,
 			Duration interval,
 			Duration lookAhead
 	) {
+
+		public record Source(String name, String url) {
+		}
 	}
 
 	public record News(

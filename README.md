@@ -188,10 +188,40 @@ git pull && docker compose up -d --build
 |---|---|---|---|
 | Fahrplan | VVS über die EFA-Schnittstelle (`XML_TRIP_REQUEST2`) | 2 min | Verbindungsauskunft, kein Abfahrtsmonitor |
 | Wetter | Open-Meteo | 30 min | ohne Schlüssel |
-| Termine | iCal-Adresse des Kalenders | 15 min | |
+| Termine | iCal-Adressen beliebig vieler Kalender | 15 min | faellt einer aus, laufen die uebrigen weiter |
 | Nachrichten | RSS/Atom der eingetragenen Feeds | 1 h | fällt ein Feed aus, laufen die übrigen weiter |
 | Heimserver | `/proc` des eigenen Rechners | 15 s | |
 | VPS | Agent am lokalen Ende des SSH-Tunnels | 30 s | |
+
+### Termine
+
+Mehrere Kalender werden nebeneinander abgerufen und zu einer nach Beginn
+sortierten Liste zusammengefuehrt. Der Name des Kalenders steht an den
+Terminen, sobald mehr als einer Termine liefert. Faellt einer aus, laufen die
+uebrigen weiter und der Ausfall wird in der Kachel vermerkt — wie bei den
+Nachrichten.
+
+Der Hauptkalender steht in `CALENDAR_ICAL_URL`, weitere kommen fortlaufend ab
+0 nummeriert dazu:
+
+```bash
+DASHBOARD_CALENDAR_SOURCES_0_NAME=Uni
+DASHBOARD_CALENDAR_SOURCES_0_URL=https://…
+DASHBOARD_CALENDAR_SOURCES_1_NAME=Familie
+DASHBOARD_CALENDAR_SOURCES_1_URL=https://…
+```
+
+Eine Luecke in der Nummerierung beendet die Liste.
+
+Die Adresse eines Google-Kalenders steht in dessen Einstellungen unter
+*Kalender integrieren → Geheime Adresse im iCal-Format*. Sie ist das
+Geheimnis selbst: wer sie kennt, liest den Kalender. Fuer Kalender, die
+jemand anderes nur freigegeben hat, bietet Google sie nicht an — dort fuehrt
+der Weg ueber die urspruengliche Quelle, etwa den iCal-Link aus ILIAS.
+
+Abgerufen wird mit `Accept-Encoding: gzip`. iCal ist Text und schrumpft
+stark — beim Google-Kalender von 464 auf 90 kB. Auf einer schwachen Leitung
+entscheidet die Menge der Bytes darueber, ob der Abruf durchkommt.
 
 ### Fahrplan
 

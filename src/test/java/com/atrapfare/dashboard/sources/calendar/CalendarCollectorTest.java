@@ -86,13 +86,13 @@ class CalendarCollectorTest {
 	private List<CalendarEvent> parse(Duration lookAhead) throws Exception {
 		DashboardProperties properties = new DashboardProperties(
 				null,
-				new DashboardProperties.Calendar("http://unbenutzt", Duration.ofMinutes(15), lookAhead),
+				new DashboardProperties.Calendar("http://unbenutzt", List.of(), Duration.ofMinutes(15), lookAhead),
 				null,
 				null,
 				null,
 				null);
 		CalendarCollector collector = new CalendarCollector(properties, RestClient.builder(), BERLIN);
-		return collector.parse(ICAL.getBytes(StandardCharsets.UTF_8), NOW);
+		return collector.parse(ICAL.getBytes(StandardCharsets.UTF_8), NOW, "Privat");
 	}
 
 	@Test

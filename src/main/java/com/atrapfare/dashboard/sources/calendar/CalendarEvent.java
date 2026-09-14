@@ -8,6 +8,8 @@ public record CalendarEvent(
 		Instant end,
 		boolean allDay,
 		String location,
-		EventState state
+		EventState state,
+		/** Name des Kalenders, aus dem der Termin stammt. Leer bei nur einer Quelle. */
+		String source
 ) {
 }
