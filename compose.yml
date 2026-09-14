@@ -16,7 +16,7 @@ services:
     # localhost ist er selbst. Ueber host.docker.internal erreicht er das
     # Gateway des unten festgelegten Netzes, auf das autossh weiterleitet.
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "host.docker.internal:172.28.0.1"
 
     environment:
       # Ohne gesetzte Zeitzone rechnet der Container in UTC - Termine

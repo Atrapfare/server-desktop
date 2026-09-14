@@ -25,6 +25,7 @@ import net.fortuna.ical4j.model.property.Summary;
 import net.fortuna.ical4j.util.CompatibilityHints;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import java.net.URI;
 import org.springframework.web.client.RestClient;
 
 @Component
@@ -81,7 +82,7 @@ public class CalendarCollector implements Collector<List<CalendarEvent>> {
 			throw new IllegalStateException("CALENDAR_ICAL_URL ist nicht gesetzt");
 		}
 
-		byte[] body = restClient.get().uri(url).retrieve().body(byte[].class);
+		byte[] body = restClient.get().uri(URI.create(url)).retrieve().body(byte[].class);
 		if (body == null || body.length == 0) {
 			throw new IllegalStateException("iCal-Quelle lieferte keinen Inhalt");
 		}
