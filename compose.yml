@@ -1,0 +1,47 @@
+services:
+  dashboard:
+    build: .
+    image: dashboard:latest
+    container_name: dashboard
+    restart: unless-stopped
+
+    # Nur auf dem Loopback des Hosts. Der Zugriff aus dem WLAN laeuft ueber
+    # den Reverse Proxy, kein Port geht direkt nach aussen.
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    env_file: .env
+
+    # Der SSH-Tunnel zum VPS laeuft auf dem Host, nicht im Container - dessen
+    # localhost ist er selbst. Ueber host.docker.internal erreicht er das
+    # Gateway des unten festgelegten Netzes, auf das autossh weiterleitet.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    environment:
+      # Ohne gesetzte Zeitzone rechnet der Container in UTC - Termine
+      # erschienen dann am falschen Tag und zur falschen Uhrzeit.
+      TZ: Europe/Berlin
+
+    # Auf dem Zielsystem stehen 8 GB zur Verfuegung; mehr als 1 GB braucht
+    # die Anwendung nicht, und ein Leck bleibt so eingegrenzt.
+    mem_limit: 1g
+
+    # Die Anwendung schreibt nichts auf die Platte - alle Daten liegen im
+    # Speicher und sind jederzeit neu abrufbar.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+# Feste Adressen, damit der autossh-Tunnel auf dem Host eine Adresse kennt,
+# an die er binden kann. Ohne festes Subnetz wechselt das Gateway mit jedem
+# Neuaufbau des Netzes.
+networks:
+  default:
+    name: dashboard
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+          gateway: 172.28.0.1
