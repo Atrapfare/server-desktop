@@ -33,6 +33,10 @@ dashboard:
         url: https://rss.golem.de/rss.php?feed=RSS2.0
       - name: Tagesschau
         url: https://www.tagesschau.de/index~rss2.xml
+  vps:
+    # Zeigt auf das lokale Ende des SSH-Tunnels, nicht auf den VPS selbst.
+    url: ${VPS_STATS_URL:http://localhost:9100/stats}
+    interval: 30s
 
 logging:
   level:
@@ -51,6 +55,8 @@ dashboard:
     interval: 1m
   news:
     interval: 1m
+  vps:
+    interval: 30s
 
 logging:
   level:

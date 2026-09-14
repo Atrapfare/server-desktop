@@ -10,7 +10,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public record DashboardProperties(
 		@NestedConfigurationProperty Weather weather,
 		@NestedConfigurationProperty Calendar calendar,
-		@NestedConfigurationProperty News news
+		@NestedConfigurationProperty News news,
+		@NestedConfigurationProperty Vps vps
 ) {
 
 	public record Weather(
@@ -35,5 +36,11 @@ public record DashboardProperties(
 
 		public record Feed(String name, String url) {
 		}
+	}
+
+	public record Vps(
+			String url,
+			Duration interval
+	) {
 	}
 }

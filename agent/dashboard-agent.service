@@ -1,0 +1,36 @@
+[Unit]
+Description=Dashboard VPS Agent
+Documentation=https://github.com/atrapfare/dashboard
+After=network.target
+
+[Service]
+Type=exec
+User=dashboard-agent
+Group=dashboard-agent
+ExecStart=/usr/bin/python3 /opt/dashboard-agent/vps_agent.py
+Restart=on-failure
+RestartSec=5
+
+# Der Agent liest nur /proc und statvfs und bindet an localhost. Alles
+# darueber hinaus wird ihm entzogen.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+CapabilityBoundingSet=
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
